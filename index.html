@@ -1,1 +1,18 @@
 
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Disease Prediction</title>
+</head>
+<body>
+    <h2>Symptom Disease Prediction</h2>
+    <form action="/predict" method="post">
+        <label for="symptoms">Enter Symptoms (numeric example):</label>
+        <input type="text" id="symptoms" name="symptoms" required>
+        <button type="submit">Predict</button>
+    </form>
+    {% if prediction_text %}
+        <h3>{{ prediction_text }}</h3>
+    {% endif %}
+</body>
+</html>
