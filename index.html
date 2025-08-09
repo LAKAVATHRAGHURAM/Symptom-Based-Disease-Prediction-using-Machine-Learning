@@ -1,18 +1,40 @@
-
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Disease Prediction</title>
+    <title>Symptom to Disease Predictor</title>
 </head>
 <body>
-    <h2>Symptom Disease Prediction</h2>
-    <form action="/predict" method="post">
-        <label for="symptoms">Enter Symptoms (numeric example):</label>
-        <input type="text" id="symptoms" name="symptoms" required>
-        <button type="submit">Predict</button>
+    <h1>🩺 Symptom to Disease Predictor</h1>
+    <form method="POST">
+        <label>Select Symptoms:</label><br>
+        <select name="symptoms" multiple size="10">
+            {% for s in symptoms %}
+                <option value="{{ s }}" {% if s in selected_symptoms %}selected{% endif %}>{{ s }}</option>
+            {% endfor %}
+        </select>
+        <br><br>
+        <button type="submit">🔎 Predict Disease</button>
     </form>
-    {% if prediction_text %}
-        <h3>{{ prediction_text }}</h3>
+
+    {% if selected_desc %}
+        <h2>Selected Symptoms & Descriptions:</h2>
+        <ul>
+        {% for s, desc in selected_desc %}
+            <li><strong>{{ s }}</strong>: {{ desc }}</li>
+        {% endfor %}
+        </ul>
+    {% endif %}
+
+    {% if prediction %}
+        <h2>✅ Predicted Disease: {{ prediction }}</h2>
+        {% if precautions %}
+            <h3>🛡 Recommended Precautions:</h3>
+            <ul>
+            {% for p in precautions %}
+                <li>{{ p }}</li>
+            {% endfor %}
+            </ul>
+        {% endif %}
     {% endif %}
 </body>
 </html>
