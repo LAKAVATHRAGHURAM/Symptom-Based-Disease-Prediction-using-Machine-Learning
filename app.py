@@ -1,9 +1,9 @@
-# app.py
-import streamlit as st
+from flask import Flask, render_template, request
 import joblib
-import numpy as np
-from trie import Trie
 import pandas as pd
+from trie import Trie
+
+app = Flask(__name__)
 
 # Load model and symptoms list
 model = joblib.load("model.pkl")
@@ -16,44 +16,43 @@ for s in symptoms:
 
 # Load disease precautions
 precaution_df = pd.read_csv("data/symptom_precaution.csv")
-precautions = {}
-for _, row in precaution_df.iterrows():
-    precautions[row['Disease']] = [
-        row['Precaution_1'], row['Precaution_2'], row['Precaution_3']
-    ]
+precautions = {
+    row['Disease']: [row['Precaution_1'], row['Precaution_2'], row['Precaution_3']]
+    for _, row in precaution_df.iterrows()
+}
 
 # Load disease descriptions
 desc_df = pd.read_csv("data/symptom_Description.csv")
-symptom_desc = dict(zip(desc_df['Disease'], desc_df['Description']))
+disease_desc = dict(zip(desc_df['Disease'], desc_df['Description']))
 
-# Streamlit UI
-st.title("🩺 Symptom to Disease Predictor")
+@app.route("/", methods=["GET", "POST"])
+def index():
+    prediction = None
+    selected_symptoms = []
+    selected_desc = []
+    precaution_list = []
 
-st.write("Start typing a symptom below, then pick from suggestions:")
+    if request.method == "POST":
+        selected_symptoms = request.form.getlist("symptoms")
+        if selected_symptoms:
+            # Vectorize input
+            input_vec = [1 if s in selected_symptoms else 0 for s in symptoms]
+            prediction = model.predict([input_vec])[0]
 
-# Autocomplete
-prefix = st.text_input("Symptom search:")
-suggestions = trie.get_suggestions(prefix)
-selected_symptoms = st.multiselect("Select your symptoms:", suggestions)
+            # Get descriptions for selected symptoms
+            selected_desc = [(s, disease_desc.get(s, "No description available")) for s in selected_symptoms]
 
-if selected_symptoms:
-    st.write("### Selected Symptoms & Their Descriptions:")
-    for s in selected_symptoms:
-        desc = symptom_desc.get(s, "No description available.")
-        st.markdown(f"- **{s.capitalize()}**: {desc}")
+            # Get precautions
+            precaution_list = precautions.get(prediction, [])
 
-if st.button("🔎 Predict Disease"):
-    if selected_symptoms:
-        input_vec = [1 if s in selected_symptoms else 0 for s in symptoms]
-        prediction = model.predict([input_vec])[0]
+    return render_template(
+        "index.html",
+        symptoms=symptoms,
+        selected_symptoms=selected_symptoms,
+        selected_desc=selected_desc,
+        prediction=prediction,
+        precautions=precaution_list
+    )
 
-        st.success(f"✅ **Predicted Disease:** {prediction}")
-
-        # Show precautions if available
-        precaution_list = precautions.get(prediction, [])
-        if precaution_list:
-            st.write("### 🛡️ Recommended Precautions:")
-            for p in precaution_list:
-                st.write(f"- {p}")
-    else:
-        st.warning("Please select at least one symptom to predict a disease.")
+if __name__ == "__main__":
+    app.run(debug=True)
